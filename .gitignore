@@ -1,0 +1,37 @@
+# 包和压缩文件
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# 日志和数据文件
+*.log
+*.sql
+*.sqlite
+
+# 操作系统产生的文件
+.DS_Store
+Thumbs.db
+
+# 编辑器/IDE产生的文件
+*.swp
+*~
+*.sublime-text
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iwsz
+# 依赖文件
+node_modules/
+bower_components/
+
+# 构建产生的目录
+/dist
+/tmp
+/out
+/build
+/release
+/unpackage
