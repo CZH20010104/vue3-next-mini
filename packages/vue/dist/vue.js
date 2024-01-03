@@ -1,6 +1,19 @@
 var Vue = (function (exports) {
     'use strict';
 
+    function effect(fn) {
+        var _effect = new ReactiveEffect(fn);
+        _effect.run();
+    }
+    var ReactiveEffect = /** @class */ (function () {
+        function ReactiveEffect(fn) {
+            this.fn = fn;
+        }
+        ReactiveEffect.prototype.run = function () {
+            return this.fn();
+        };
+        return ReactiveEffect;
+    }());
     /**
      * 收集依赖
      * @param target
@@ -54,6 +67,7 @@ var Vue = (function (exports) {
         return proxy;
     }
 
+    exports.effect = effect;
     exports.reactive = reactive;
 
     Object.defineProperty(exports, '__esModule', { value: true });
