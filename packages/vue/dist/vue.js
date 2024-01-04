@@ -1,15 +1,18 @@
 var Vue = (function (exports) {
     'use strict';
 
+    var targetMap = new WeakMap();
     function effect(fn) {
         var _effect = new ReactiveEffect(fn);
         _effect.run();
     }
+    var activeEffect;
     var ReactiveEffect = /** @class */ (function () {
         function ReactiveEffect(fn) {
             this.fn = fn;
         }
         ReactiveEffect.prototype.run = function () {
+            activeEffect = this;
             return this.fn();
         };
         return ReactiveEffect;
@@ -20,7 +23,13 @@ var Vue = (function (exports) {
      * @param key
      */
     function track(target, key) {
-        console.log('收集依赖');
+        if (!activeEffect)
+            return;
+        var depsMap = targetMap.get(target);
+        if (!depsMap) {
+            targetMap.set(target, (depsMap = new Map()));
+        }
+        depsMap.set(key, activeEffect);
     }
     /**
      * 触发依赖
@@ -29,14 +38,22 @@ var Vue = (function (exports) {
      * @param newValue
      */
     function trigger(target, key, newValue) {
-        console.log('触发依赖');
+        var depsMap = targetMap.get(target);
+        if (!depsMap) {
+            return;
+        }
+        var effect = depsMap.get(key);
+        if (!effect) {
+            return;
+        }
+        effect.fn();
     }
 
     var get = createGetter();
     function createGetter() {
         return function get(target, key, receiver) {
             var res = Reflect.get(target, key, receiver);
-            track();
+            track(target, key);
             return res;
         };
     }
@@ -44,7 +61,7 @@ var Vue = (function (exports) {
     function createSetter() {
         return function set(target, key, value, receiver) {
             var res = Reflect.set(target, key, value, receiver);
-            trigger();
+            trigger(target, key);
             return res;
         };
     }
