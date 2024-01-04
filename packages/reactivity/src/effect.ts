@@ -1,4 +1,6 @@
-type KeyToDepMap = Map<any, ReactiveEffect>
+import { Dep, createDep } from './dep'
+
+type KeyToDepMap = Map<any, Dep>
 const targetMap = new WeakMap<any, KeyToDepMap>()
 
 export function effect<T = any>(fn: () => T) {
@@ -30,7 +32,21 @@ export function track(target: object, key: unknown) {
   if (!depsMap) {
     targetMap.set(target, (depsMap = new Map()))
   }
-  depsMap.set(key, activeEffect)
+
+  let dep = depsMap.get(key)
+  if (!dep) {
+    depsMap.set(key, (dep = createDep()))
+  }
+
+  trackEffects(dep)
+}
+
+/**
+ * 利用dep依次跟踪指定的key的所有effect
+ * @param dep
+ */
+export function trackEffects(dep: Dep) {
+  dep.add(activeEffect!)
 }
 
 /**
@@ -44,9 +60,31 @@ export function trigger(target: object, key: unknown, newValue: unknown) {
   if (!depsMap) {
     return
   }
-  const effect = depsMap.get(key) as ReactiveEffect
-  if (!effect) {
+  const dep: Dep | undefined = depsMap.get(key)
+  if (!dep) {
     return
   }
-  effect.fn()
+
+  triggerEffects(dep)
+}
+
+/**
+ * 依次触发dep中保存的依赖
+ * @param dep
+ */
+export function triggerEffects(dep: Dep) {
+  const effects = Array.isArray(dep) ? dep : [...dep]
+
+  // 依次触发依赖
+  for (const effect of effects) {
+    triggerEffect(effect)
+  }
+}
+
+/**
+ * 触发指定依赖
+ * @param effect
+ */
+export function triggerEffect(effect: ReactiveEffect) {
+  effect.run()
 }

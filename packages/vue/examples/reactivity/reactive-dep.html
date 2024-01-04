@@ -8,15 +8,30 @@
     <script src="../../dist/vue.js"></script>
 </head>
 <body>
-    <div id="app"></div>
+    <div id="app">
+        <p id="p1"></p>
+        <p id="p2"></p>
+    </div>
 </body>
 <script>
     const { reactive,effect } = Vue
     const obj = reactive({
         name: '张三'
     })
-    effect(() =>{
-        document.querySelector('#app').innerText = obj.name
+    const obj1 = reactive({
+        name: '张三'
     })
+    effect(() =>{
+        document.querySelector('#p1').innerText = obj.name
+    })
+    effect(() =>{
+        document.querySelector('#p2').innerText = obj1.name
+    })
+    setTimeout(() => {
+        obj.name = 'lisi'
+    }, 2000)
+    setTimeout(() => {
+        obj1.name = 'wawu'
+    }, 2000)
 </script>
 </html>
