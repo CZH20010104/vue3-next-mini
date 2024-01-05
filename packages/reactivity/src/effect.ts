@@ -1,3 +1,4 @@
+import { isArray } from '@vue/shared'
 import { Dep, createDep } from './dep'
 
 type KeyToDepMap = Map<any, Dep>
@@ -73,7 +74,7 @@ export function trigger(target: object, key: unknown, newValue: unknown) {
  * @param dep
  */
 export function triggerEffects(dep: Dep) {
-  const effects = Array.isArray(dep) ? dep : [...dep]
+  const effects = isArray(dep) ? dep : [...dep]
 
   // 依次触发依赖
   for (const effect of effects) {

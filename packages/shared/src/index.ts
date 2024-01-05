@@ -1,3 +1,4 @@
-export const str = value => {
-  console.log(value)
-}
+export const isArray = Array.isArray
+
+export const isObject = (val: unknown) =>
+  val !== null && typeof val === 'object'
