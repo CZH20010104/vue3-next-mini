@@ -64,6 +64,12 @@ var Vue = (function (exports) {
     var isObject = function (val) {
         return val !== null && typeof val === 'object';
     };
+    /**
+     * 对比两个数据是否发生变化
+     */
+    var hasChanged = function (value, oldValue) {
+        return !Object.is(value, oldValue);
+    };
 
     var createDep = function (effects) {
         var dep = new Set(effects);
@@ -210,6 +216,7 @@ var Vue = (function (exports) {
             this.__v_isShallow = __v_isShallow;
             this.dep = undefined;
             this.__v_isRef = true;
+            this._rawValue = value;
             this._value = __v_isShallow ? value : toReactive(value);
         }
         Object.defineProperty(RefImpl.prototype, "value", {
@@ -217,15 +224,32 @@ var Vue = (function (exports) {
                 trackRefValue(this);
                 return this._value;
             },
-            set: function (newValue) { },
+            set: function (newValue) {
+                if (hasChanged(newValue, this._rawValue)) {
+                    this._rawValue = newValue;
+                    this._value = toReactive(newValue);
+                    triggerRefValue(this);
+                }
+            },
             enumerable: false,
             configurable: true
         });
         return RefImpl;
     }());
+    /**
+     * 收集依赖
+     */
     function trackRefValue(ref) {
         if (activeEffect) {
             trackEffects(ref.dep || (ref.dep = createDep()));
+        }
+    }
+    /**
+     * 触发依赖
+     */
+    function triggerRefValue(ref) {
+        if (ref.dep) {
+            triggerEffects(ref.dep);
         }
     }
     /**
