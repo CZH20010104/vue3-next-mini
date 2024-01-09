@@ -73,6 +73,7 @@ var Vue = (function (exports) {
     var isFunction = function (val) {
         return typeof val === 'function';
     };
+    var extend = Object.assign;
 
     var createDep = function (effects) {
         var dep = new Set(effects);
@@ -80,9 +81,14 @@ var Vue = (function (exports) {
     };
 
     var targetMap = new WeakMap();
-    function effect(fn) {
+    function effect(fn, options) {
         var _effect = new ReactiveEffect(fn);
-        _effect.run();
+        if (options) {
+            extend(_effect, options);
+        }
+        if (!options || !options.lazy) {
+            _effect.run();
+        }
     }
     var activeEffect;
     var ReactiveEffect = /** @class */ (function () {
@@ -325,8 +331,39 @@ var Vue = (function (exports) {
         return cRef;
     }
 
+    var isFlushPending = false;
+    var resolvedPromise = Promise.resolve();
+    var pendingPreFlushCbs = [];
+    function queuePreFlushCb(cb) {
+        queueCb(cb);
+    }
+    function queueCb(cb, pendingQueue) {
+        pendingPreFlushCbs.push(cb);
+        queueFlush();
+    }
+    function queueFlush() {
+        if (!isFlushPending) {
+            isFlushPending = true;
+            resolvedPromise.then(flushJobs);
+        }
+    }
+    function flushJobs() {
+        isFlushPending = false;
+        flushPreFlushCbs();
+    }
+    function flushPreFlushCbs() {
+        if (pendingPreFlushCbs.length) {
+            var activePreFlushCbs = __spreadArray([], __read(new Set(pendingPreFlushCbs)), false);
+            pendingPreFlushCbs.length = 0;
+            for (var i = 0; i < activePreFlushCbs.length; i++) {
+                activePreFlushCbs[i]();
+            }
+        }
+    }
+
     exports.computed = computed;
     exports.effect = effect;
+    exports.queuePreFlushCb = queuePreFlushCb;
     exports.reactive = reactive;
     exports.ref = ref;
 

@@ -12,3 +12,5 @@ export const hasChanged = (value: any, oldValue: any): boolean =>
 export const isFunction = (val: unknown): val is Function => {
   return typeof val === 'function'
 }
+
+export const extend = Object.assign
