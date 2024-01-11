@@ -422,6 +422,65 @@ var Vue = (function (exports) {
         return value;
     }
 
+    function normalizeClass(value) {
+        var res = '';
+        if (isString(value)) {
+            res = value;
+        }
+        else if (isArray(value)) {
+            for (var i = 0; i < value.length; i++) {
+                var normalize = normalizeClass(value[i]);
+                if (normalize) {
+                    res += normalize + ' ';
+                }
+            }
+        }
+        else if (isObject(value)) {
+            for (var name_1 in value) {
+                if (value[name_1]) {
+                    res += name_1 + ' ';
+                }
+            }
+        }
+        return res.trim();
+    }
+    function normalizeStyle(value) {
+        if (isArray(value)) {
+            var res = {};
+            for (var i = 0; i < value.length; i++) {
+                var item = value[i];
+                var normalized = isString(item)
+                    ? parseStringStyle(item)
+                    : normalizeStyle(item);
+                if (normalized) {
+                    for (var key in normalized) {
+                        res[key] = normalized[key];
+                    }
+                }
+            }
+            return res;
+        }
+        else if (isString(value) || isObject(value)) {
+            return value;
+        }
+    }
+    var listDelimiterRE = /;(?![^(]*\))/g;
+    var propertyDelimiterRE = /:([^]+)/;
+    var styleCommentRE = /\/\*[^]*?\*\//g;
+    function parseStringStyle(cssText) {
+        var ret = {};
+        cssText
+            .replace(styleCommentRE, '')
+            .split(listDelimiterRE)
+            .forEach(function (item) {
+            if (item) {
+                var tmp = item.split(propertyDelimiterRE);
+                tmp.length > 1 && (ret[tmp[0].trim()] = tmp[1].trim());
+            }
+        });
+        return ret;
+    }
+
     var Fragment = Symbol('Fragment');
     var Text = Symbol('Text');
     var Comment = Symbol('Comment');
@@ -429,6 +488,15 @@ var Vue = (function (exports) {
         return value ? value.__v_isVNode === true : false;
     }
     function createVNode(type, props, children) {
+        if (props) {
+            var klass = props.class, style = props.style;
+            if (klass && !isString(klass)) {
+                props.class = normalizeClass(klass);
+            }
+            if (style && isObject(style)) {
+                props.style = normalizeStyle(style);
+            }
+        }
         var shapeFlag = isString(type)
             ? 1 /* ShapeFlags.ELEMENT */
             : isObject(type)
