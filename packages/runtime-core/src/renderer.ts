@@ -1,5 +1,7 @@
 import { ShapeFlags } from 'packages/shared/src/shapeFlags'
 import { Comment, Fragment, Text } from './vnode'
+import { EMPTY_OBJ } from '@vue/shared'
+import { patchProp } from 'packages/runtime-dom/src/patchProp'
 
 export interface RendererOptions {
   /**
@@ -35,8 +37,11 @@ function baseCreateRenderer(options: RendererOptions) {
   const processElement = (oldVNode, newVNode, container, anchor) => {
     // 如果旧节点存在就是更新操作  不存在就是挂载操作
     if (oldVNode == null) {
+      // 挂载
       mountElement(newVNode, container, anchor)
     } else {
+      // 更新
+      patchElement(oldVNode, newVNode)
     }
   }
 
@@ -57,6 +62,71 @@ function baseCreateRenderer(options: RendererOptions) {
     }
     // 4、插入
     hostInsert(el, container, anchor)
+  }
+
+  const patchElement = (oldVNode, newVNode) => {
+    const el = (newVNode.el = oldVNode.el)
+
+    const oldProps = oldVNode.props || EMPTY_OBJ
+    const newProps = newVNode.props || EMPTY_OBJ
+
+    patchChildren(oldVNode, newVNode, el, null)
+
+    patchProps(el, newVNode, oldProps, newProps)
+  }
+
+  const patchChildren = (oldVNode, newVNode, container, anchor) => {
+    const c1 = oldVNode && oldVNode.children
+    const prevShapeFlag = oldVNode ? oldVNode.shapeFlag : 0
+    const c2 = newVNode && newVNode.children
+    const { shapeFlag } = newVNode
+
+    if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+      if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+        // 卸载旧节点
+      }
+
+      if (c2 !== c1) {
+        // 挂载新节点的文本
+        hostSetElementText(container, c2)
+      }
+    } else {
+      if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+        if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+          // diff
+        } else {
+          // 卸载
+        }
+      } else {
+        if (prevShapeFlag & ShapeFlags.TEXT_CHILDREN) {
+          // 删除旧节点的text
+          hostSetElementText(container, '')
+        }
+        if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+          //单独新子节点的挂载
+        }
+      }
+    }
+  }
+
+  const patchProps = (el: Element, vnode, oldProps, newProps) => {
+    if (oldProps !== newProps) {
+      for (const key in newProps) {
+        const next = newProps[key]
+        const prev = oldProps[key]
+        if (next !== prev) {
+          hostPatchProp(el, key, prev, next)
+        }
+      }
+
+      if (oldProps !== EMPTY_OBJ) {
+        for (const key in oldProps) {
+          if (!(key in newProps)) {
+            hostPatchProp(el, key, oldProps[key], null)
+          }
+        }
+      }
+    }
   }
 
   const patch = (oldVNode, newVNode, container, anchor = null) => {
