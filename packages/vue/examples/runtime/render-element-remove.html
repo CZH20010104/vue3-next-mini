@@ -26,8 +26,7 @@
     render(vnode, document.querySelector('#app'))
 
     setTimeout(() => {
-        render(vnode2, document.querySelector('#app'))
-        console.log(vnode2);
+        render(null, document.querySelector('#app'))
     }, 2000)
 </script>
 </html>

@@ -533,6 +533,9 @@ var Vue = (function (exports) {
         vnode.children = children;
         vnode.shapeFlag |= type;
     }
+    function isSameVNodeType(n1, n2) {
+        return n1.type === n2.type && n1.key === n2.key;
+    }
 
     function h(type, propsOrChildren, children) {
         var l = arguments.length;
@@ -562,7 +565,7 @@ var Vue = (function (exports) {
         return baseCreateRenderer(options);
     }
     function baseCreateRenderer(options) {
-        var hostInsert = options.insert, hostPatchProp = options.patchProp, hostCreateElement = options.createElement, hostSetElementText = options.setElementText;
+        var hostInsert = options.insert, hostPatchProp = options.patchProp, hostCreateElement = options.createElement, hostSetElementText = options.setElementText, hostRemove = options.remove;
         var processElement = function (oldVNode, newVNode, container, anchor) {
             // 如果旧节点存在就是更新操作  不存在就是挂载操作
             if (oldVNode == null) {
@@ -642,6 +645,10 @@ var Vue = (function (exports) {
             if (oldVNode === newVNode) {
                 return;
             }
+            if (oldVNode && !isSameVNodeType(oldVNode, newVNode)) {
+                unmount(oldVNode);
+                oldVNode = null;
+            }
             var type = newVNode.type, shapeFlag = newVNode.shapeFlag;
             switch (type) {
                 case Text:
@@ -656,8 +663,16 @@ var Vue = (function (exports) {
                     }
             }
         };
+        var unmount = function (vnode) {
+            hostRemove(vnode.el);
+        };
         var render = function (vnode, container) {
-            if (vnode == null) ;
+            if (vnode == null) {
+                // 卸载
+                if (container._vnode) {
+                    unmount(container._vnode);
+                }
+            }
             else {
                 patch(container._vnode || null, vnode, container);
             }
@@ -679,6 +694,12 @@ var Vue = (function (exports) {
         },
         setElementText: function (el, text) {
             el.textContent = text;
+        },
+        remove: function (child) {
+            var parent = child.parentNode;
+            if (parent) {
+                parent.removeChild(child);
+            }
         }
     };
 
