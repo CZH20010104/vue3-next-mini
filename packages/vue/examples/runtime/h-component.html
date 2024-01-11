@@ -12,16 +12,16 @@
 </body>
 <script>
     const { h } = Vue
-    // const vnode = h('div', {
-    //     class: 'test'
-    // }, 'hello render')
-    const vnode = h('div', {
-        class: 'test'
-    }, [
-        h('p', 'p1'),
-        h('p', 'p2'),
-        h('p', 'p3'),
-    ])
-    console.log(vnode);
+    
+    const component = {
+        render() {
+            const vnode1 = h('div', '这是一个component')
+            return vnode1
+        }
+    }
+
+    const vnode2 = h(component)
+
+    console.log(vnode2);
 </script>
 </html>

@@ -11,17 +11,16 @@
     <div id="app"></div>
 </body>
 <script>
-    const { h } = Vue
-    // const vnode = h('div', {
-    //     class: 'test'
-    // }, 'hello render')
-    const vnode = h('div', {
-        class: 'test'
-    }, [
-        h('p', 'p1'),
-        h('p', 'p2'),
-        h('p', 'p3'),
-    ])
-    console.log(vnode);
+    const { h, Text, Fragment, Comment } = Vue
+
+    const vnodeText = h(Text, '这是一个Text')
+    console.log(vnodeText);
+
+    const vnodeFragment = h(Fragment, '这是一个Fragment')
+    console.log(vnodeFragment);
+
+    const vnodeComment = h(Comment, '这是一个Comment')
+    console.log(vnodeComment);
+
 </script>
 </html>

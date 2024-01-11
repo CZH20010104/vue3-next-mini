@@ -422,11 +422,18 @@ var Vue = (function (exports) {
         return value;
     }
 
+    var Fragment = Symbol('Fragment');
+    var Text = Symbol('Text');
+    var Comment = Symbol('Comment');
     function isVNode(value) {
         return value ? value.__v_isVNode === true : false;
     }
     function createVNode(type, props, children) {
-        var shapeFlag = isString(type) ? 1 /* ShapeFlags.ELEMENT */ : 0;
+        var shapeFlag = isString(type)
+            ? 1 /* ShapeFlags.ELEMENT */
+            : isObject(type)
+                ? 4 /* ShapeFlags.STATEFUL_COMPONENT */
+                : 0;
         return createBaseVNode(type, props, children, shapeFlag);
     }
     function createBaseVNode(type, props, children, shapeFlag) {
@@ -441,11 +448,12 @@ var Vue = (function (exports) {
     }
     function normalizeChildren(vnode, children) {
         var type = 0;
-        vnode.shapeFlag;
-        if (children === null) {
+        if (children == null) {
             children = null;
         }
-        else if (isArray(children)) ;
+        else if (isArray(children)) {
+            type = 16 /* ShapeFlags.ARRAY_CHILDREN */;
+        }
         else if (typeof children === 'object') ;
         else if (isFunction(children)) ;
         else {
@@ -480,6 +488,9 @@ var Vue = (function (exports) {
         }
     }
 
+    exports.Comment = Comment;
+    exports.Fragment = Fragment;
+    exports.Text = Text;
     exports.computed = computed;
     exports.effect = effect;
     exports.h = h;
