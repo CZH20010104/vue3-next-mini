@@ -748,6 +748,35 @@ var Vue = (function (exports) {
         style[name] = val;
     }
 
+    function patchEvent(el, rawName, prevValue, nextValue) {
+        var invokers = el._vei || (el._vei = {});
+        var existingInvoker = invokers[rawName];
+        if (nextValue && existingInvoker) {
+            existingInvoker.value = nextValue;
+        }
+        else {
+            var name_1 = parseName(rawName);
+            if (nextValue) {
+                var invoker = (invokers[rawName] = createInvoker(nextValue));
+                el.addEventListener(name_1, invoker);
+            }
+            else if (existingInvoker) {
+                el.removeEventListener(name_1, existingInvoker);
+                invokers[rawName] = undefined;
+            }
+        }
+    }
+    function parseName(name) {
+        return name.slice(2).toLowerCase();
+    }
+    function createInvoker(initiaValue) {
+        var invoker = function (e) {
+            invoker.value && invoker.value();
+        };
+        invoker.value = initiaValue;
+        return invoker;
+    }
+
     var patchProp = function (el, key, prevValue, nextValue) {
         if (key === 'class') {
             patchClass(el, nextValue);
@@ -755,7 +784,9 @@ var Vue = (function (exports) {
         else if (key === 'style') {
             patchStyle(el, prevValue, nextValue);
         }
-        else if (isOn(key)) ;
+        else if (isOn(key)) {
+            patchEvent(el, key, prevValue, nextValue);
+        }
         else if (shouldSetAsProp(el, key)) {
             patchDOMProp(el, key, nextValue);
         }
