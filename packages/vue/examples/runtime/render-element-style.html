@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="../../dist/vue.js"></script>
+</head>
+<body>
+    <div id="app"></div>
+</body>
+<script>
+    const { h, render } = Vue
+    const vnode = h('div', {
+        style: {
+            'color': 'red'
+        }
+    }, 'hello render')
+    const vnode2 = h('div', {
+        style: {
+            'color': '#000'
+        }
+    }, 'hello render')
+    render(vnode, document.querySelector('#app'))
+    setTimeout(() => {
+        render(vnode2, document.querySelector('#app'))
+    }, 2000)
+</script>
+</html>

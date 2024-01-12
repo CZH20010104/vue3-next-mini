@@ -728,11 +728,33 @@ var Vue = (function (exports) {
         }
     }
 
+    function patchStyle(el, prev, next) {
+        var style = el.style;
+        var isCssString = isString(next);
+        if (next && !isCssString) {
+            for (var key in next) {
+                setStyle(style, key, next[key]);
+            }
+            if (prev && !isString(prev)) {
+                for (var key in prev) {
+                    if (next[key] == null) {
+                        setStyle(style, key, '');
+                    }
+                }
+            }
+        }
+    }
+    function setStyle(style, name, val) {
+        style[name] = val;
+    }
+
     var patchProp = function (el, key, prevValue, nextValue) {
         if (key === 'class') {
             patchClass(el, nextValue);
         }
-        else if (key === 'style') ;
+        else if (key === 'style') {
+            patchStyle(el, prevValue, nextValue);
+        }
         else if (isOn(key)) ;
         else if (shouldSetAsProp(el, key)) {
             patchDOMProp(el, key, nextValue);
