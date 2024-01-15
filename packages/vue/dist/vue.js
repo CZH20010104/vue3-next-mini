@@ -561,11 +561,51 @@ var Vue = (function (exports) {
         }
     }
 
+    function normalizeVNode(child) {
+        if (typeof child === 'object') {
+            return cloneIfMounted(child);
+        }
+        else {
+            return createVNode(Text, null, String(child));
+        }
+    }
+    function cloneIfMounted(child) {
+        return child;
+    }
+
     function createRenderer(options) {
         return baseCreateRenderer(options);
     }
     function baseCreateRenderer(options) {
-        var hostInsert = options.insert, hostPatchProp = options.patchProp, hostCreateElement = options.createElement, hostSetElementText = options.setElementText, hostRemove = options.remove;
+        var hostInsert = options.insert, hostPatchProp = options.patchProp, hostCreateElement = options.createElement, hostSetElementText = options.setElementText, hostRemove = options.remove, hostCreateText = options.createText, hostSetText = options.setText, hostCreateComment = options.createComment;
+        var processFragment = function (oldVNode, newVNode, container, anchor) {
+            if (oldVNode == null) {
+                mountChildren(newVNode.children, container, anchor);
+            }
+            else {
+                patchChildren(oldVNode, newVNode, container);
+            }
+        };
+        var processCommentNode = function (oldVNode, newVNode, container, anchor) {
+            if (oldVNode == null) {
+                hostCreateComment(newVNode.children);
+            }
+            else {
+                newVNode.el = oldVNode.el;
+            }
+        };
+        var processText = function (oldVNode, newVNode, container, anchor) {
+            if (oldVNode == null) {
+                newVNode.el = hostCreateText(newVNode.children);
+                hostInsert(newVNode.el, container, anchor);
+            }
+            else {
+                var el = (newVNode.el = oldVNode.el);
+                if (newVNode.children !== oldVNode.children) {
+                    hostSetText(el, newVNode.children);
+                }
+            }
+        };
         var processElement = function (oldVNode, newVNode, container, anchor) {
             // 如果旧节点存在就是更新操作  不存在就是挂载操作
             if (oldVNode == null) {
@@ -600,6 +640,15 @@ var Vue = (function (exports) {
             var newProps = newVNode.props || EMPTY_OBJ;
             patchChildren(oldVNode, newVNode, el);
             patchProps(el, newVNode, oldProps, newProps);
+        };
+        var mountChildren = function (children, container, anchor) {
+            if (isString(children)) {
+                children = children.split('');
+            }
+            for (var i = 0; i < children.length; i++) {
+                var child = (children[i] = normalizeVNode(children[i]));
+                patch(null, child, container, anchor);
+            }
         };
         var patchChildren = function (oldVNode, newVNode, container, anchor) {
             var c1 = oldVNode && oldVNode.children;
@@ -652,10 +701,13 @@ var Vue = (function (exports) {
             var type = newVNode.type, shapeFlag = newVNode.shapeFlag;
             switch (type) {
                 case Text:
+                    processText(oldVNode, newVNode, container, anchor);
                     break;
                 case Comment:
+                    processCommentNode(oldVNode, newVNode);
                     break;
                 case Fragment:
+                    processFragment(oldVNode, newVNode, container, anchor);
                     break;
                 default:
                     if (shapeFlag & 1 /* ShapeFlags.ELEMENT */) {
@@ -700,7 +752,12 @@ var Vue = (function (exports) {
             if (parent) {
                 parent.removeChild(child);
             }
-        }
+        },
+        createText: function (text) { return doc.createTextNode(text); },
+        setText: function (node, text) {
+            node.nodeValue = text;
+        },
+        createComment: function (text) { return doc.createComment(text); }
     };
 
     function patchClass(el, value) {
