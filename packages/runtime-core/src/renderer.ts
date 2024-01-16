@@ -2,7 +2,10 @@ import { ShapeFlags } from 'packages/shared/src/shapeFlags'
 import { Comment, Fragment, Text, isSameVNodeType } from './vnode'
 import { EMPTY_OBJ, isString } from '@vue/shared'
 import { patchProp } from 'packages/runtime-dom/src/patchProp'
-import { normalizeVNode } from './componentRenderUtils'
+import { normalizeVNode, renderComponentRoot } from './componentRenderUtils'
+import { createComponentInstance, setupComponent } from './component'
+import { ReactiveEffect } from 'packages/reactivity/src/effect'
+import { queuePreFlushCb } from './scheduler'
 
 export interface RendererOptions {
   /**
@@ -43,6 +46,12 @@ function baseCreateRenderer(options: RendererOptions) {
     createComment: hostCreateComment
   } = options
 
+  const processComponent = (oldVNode, newVNode, container, anchor) => {
+    if (oldVNode == null) {
+      mountComponent(newVNode, container, anchor)
+    }
+  }
+
   const processFragment = (oldVNode, newVNode, container, anchor) => {
     if (oldVNode == null) {
       mountChildren(newVNode.children, container, anchor)
@@ -80,6 +89,37 @@ function baseCreateRenderer(options: RendererOptions) {
       // 更新
       patchElement(oldVNode, newVNode)
     }
+  }
+
+  const mountComponent = (initialVNode, container, anchor) => {
+    initialVNode.component = createComponentInstance(initialVNode)
+    const instance = initialVNode.component
+
+    setupComponent(instance)
+
+    setupRenderEffect(instance, initialVNode, container, anchor)
+  }
+
+  const setupRenderEffect = (instance, initialVNode, container, anchor) => {
+    const componentUpdateFn = () => {
+      if (!instance.isMounted) {
+        const subTree = (instance.subTree = renderComponentRoot(instance))
+
+        patch(null, subTree, container, anchor)
+
+        initialVNode.el = instance.el
+      } else {
+      }
+    }
+
+    const effect = (instance.effect = new ReactiveEffect(
+      componentUpdateFn,
+      () => queuePreFlushCb(update)
+    ))
+
+    const update = (instance.update = () => effect.run())
+
+    update()
   }
 
   const mountElement = (vnode, container, anchor) => {
@@ -203,6 +243,7 @@ function baseCreateRenderer(options: RendererOptions) {
         if (shapeFlag & ShapeFlags.ELEMENT) {
           processElement(oldVNode, newVNode, container, anchor)
         } else if (shapeFlag & ShapeFlags.COMPONENT) {
+          processComponent(oldVNode, newVNode, container, anchor)
         }
     }
   }
